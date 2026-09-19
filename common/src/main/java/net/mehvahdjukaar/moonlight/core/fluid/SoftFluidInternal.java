@@ -103,14 +103,14 @@ public class SoftFluidInternal {
 
     //called by data sync to player
     public static void postInitClient(RegistryAccess ra) {
-        // populate maps
-        FLUID_MAP.get(ra);
-        ITEM_MAP.get(ra);
-
         var reg = SoftFluidRegistry.get(ra);
         for (var f : reg) {
             f.afterInit();
         }
+        //item map must be built after afterInit adds the buckets of equivalent fluids
+        ITEM_MAP.invalidate(ra);
+        FLUID_MAP.get(ra);
+        ITEM_MAP.get(ra);
         //ok so here the extra registered fluids should have already been sent to the client
         SoftFluidColors.refreshParticleColors(reg);
     }
@@ -124,19 +124,20 @@ public class SoftFluidInternal {
 
     //on data load
     public static void doPostInitServer(RegistryAccess ra) {
-        FLUID_MAP.get(ra);
-        ITEM_MAP.get(ra);
         //registers existing fluids. also update the salve maps
         //we need to call this on bont server and client as this happens too late and these wont be sent
-        registerExistingVanillaFluids(ra, FLUID_MAP.get(ra), ITEM_MAP.get(ra));
+        registerExistingVanillaFluids(ra, FLUID_MAP.get(ra));
 
         for (var f : SoftFluidRegistry.get(ra)) {
             f.afterInit();
         }
+        //same as client, buckets are only known now
+        ITEM_MAP.invalidate(ra);
+        ITEM_MAP.get(ra);
     }
 
     @PlatformImpl
-    private static void registerExistingVanillaFluids(RegistryAccess ra, Map<Fluid, Holder<SoftFluid>> fluidMap, Map<Item, Holder<SoftFluid>> itemMap) {
+    private static void registerExistingVanillaFluids(RegistryAccess ra, Map<Fluid, Holder<SoftFluid>> fluidMap) {
         throw new AssertionError();
     }
 
