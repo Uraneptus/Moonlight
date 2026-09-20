@@ -2,7 +2,6 @@ package net.mehvahdjukaar.moonlight.api.misc.fake_level;
 
 import com.mojang.datafixers.DataFixer;
 import net.mehvahdjukaar.candlelight.api.VirtualOverride;
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -49,7 +48,6 @@ import net.minecraft.world.level.timers.TimerQueue;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -67,7 +65,7 @@ public class FakeServerLevel extends ServerLevel {
 
     public FakeServerLevel(String name, ServerLevel original) {
         super(original.getServer(),
-                Util.backgroundExecutor(),
+                Runnable::run, //run inline to avoid issues.dont use back exec as its fixed
                 original.getServer().storageSource,
                 new ReadOlyServerLevelData(name, original.serverLevelData),
                 ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(name)),
@@ -90,8 +88,8 @@ public class FakeServerLevel extends ServerLevel {
                                                          int viewDistance, int simulationDistance, boolean sync, ChunkProgressListener progressListener,
                                                          ChunkStatusUpdateListener chunkStatusListener, Supplier<DimensionDataStorage> dataStorage) {
         return new DummyServerChunkCache(level, levelStorageAccess, fixerUpper, structureManager,
-                Util.backgroundExecutor(), generator, viewDistance, simulationDistance, sync,
-                new DummyProgressListener(), chunkStatusListener, dataStorage);
+                dispatcher, generator, viewDistance, simulationDistance, sync,
+                progressListener, chunkStatusListener, dataStorage);
     }
 
     public static <A extends EntityAccess> PersistentEntitySectionManager<A> createDummyEntityManager(Class<A> entityClass, LevelCallback callbacks, EntityPersistentStorage permanentStorage) {
@@ -460,8 +458,13 @@ public class FakeServerLevel extends ServerLevel {
     //not ideal really
     private static class DummyServerChunkCache extends ServerChunkCache {
 
+        private final EmptyLevelChunk emptyChunk;
+
         public DummyServerChunkCache(ServerLevel level, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer fixerUpper, StructureTemplateManager structureManager, Executor dispatcher, ChunkGenerator generator, int viewDistance, int simulationDistance, boolean sync, ChunkProgressListener progressListener, ChunkStatusUpdateListener chunkStatusListener, Supplier<DimensionDataStorage> overworldDataStorage) {
             super(level, levelStorageAccess, fixerUpper, structureManager, dispatcher, generator, viewDistance, simulationDistance, sync, progressListener, chunkStatusListener, overworldDataStorage);
+            this.emptyChunk = new EmptyLevelChunk(level, new ChunkPos(0, 0),
+                    level.registryAccess().registryOrThrow(Registries.BIOME)
+                            .getHolderOrThrow(Biomes.FOREST));
         }
 
 
@@ -494,14 +497,8 @@ public class FakeServerLevel extends ServerLevel {
             return getEmptyChunk(chunkX, chunkZ);
         }
 
-        private EmptyLevelChunk emptyChunkInstance;
-
-        private @NotNull EmptyLevelChunk getEmptyChunk(int x, int z) {
-            if (emptyChunkInstance == null) {
-                emptyChunkInstance = new EmptyLevelChunk(getLevel(), new ChunkPos(0, 0),
-                        getLevel().registryAccess().registryOrThrow(Registries.BIOME).getHolderOrThrow(Biomes.FOREST));
-            }
-            return emptyChunkInstance;
+        private EmptyLevelChunk getEmptyChunk(int x, int z) {
+            return emptyChunk;
         }
 
         @Override

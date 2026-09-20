@@ -25,7 +25,7 @@ public class MoonlightFabricClient implements ClientModInitializer {
         MoonlightFabric.commonSetup();
         ItemTooltipCallback.EVENT.register(MoonlightClient::onItemTooltip);
         ClientPlayConnectionEvents.DISCONNECT.register((clientPacketListener, minecraft) -> {
-            FakeLevelManager.invalidateAll();
+            FakeLevelManager.invalidateAll(true);
             RenderedTexturesManager.clearCache();
             DynamicTextureRenderer.clearCache();
             var level = clientPacketListener.getLevel();

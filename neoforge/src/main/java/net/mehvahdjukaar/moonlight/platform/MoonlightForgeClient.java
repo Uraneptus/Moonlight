@@ -39,7 +39,7 @@ public class MoonlightForgeClient {
     }
 
     public static void onPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        FakeLevelManager.invalidateAll();
+        FakeLevelManager.invalidateAll(true);
         DynamicTextureRenderer.clearCache();
         RenderedTexturesManager.clearCache();
         var player = event.getPlayer();

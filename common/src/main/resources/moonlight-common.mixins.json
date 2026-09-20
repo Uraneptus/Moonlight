@@ -25,6 +25,7 @@
     "BlockItemMixin",
     "BlockStateBaseMixin",
     "ChunkGeneratorMixin",
+    "ChunkMapMixin",
     "DebugPacketsMixin",
     "EntityMixin",
     "FixBlockPlaceContextMixin",
