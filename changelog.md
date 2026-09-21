@@ -1,2 +1,2 @@
-- blacklisted burnt mod from automatic wood detection
-- more support for codec config screen
+- fixed arare concurrency issue 
+- fixed an issue with fluid buckets
