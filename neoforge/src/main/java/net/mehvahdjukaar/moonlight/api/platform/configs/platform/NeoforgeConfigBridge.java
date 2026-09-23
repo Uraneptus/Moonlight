@@ -34,16 +34,12 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Supplier;
 
+//Adapter for neoforge configs
 @SuppressWarnings({"unchecked", "rawtypes"})
-public final class ForeignConfigBridge {
+public final class NeoforgeConfigBridge {
 
-    // one holder per foreign ModConfig, so re-opening the screen reuses it (and keeps reading current values live)
     private static final Map<ModConfig, ForeignConfigHolder> CACHE = new WeakHashMap<>();
-
-    // ConfigTracker exposes no public "configs of mod X" accessor, so read its live registry field once
     private static final Map<String, List<ModConfig>> CONFIGS_BY_MOD = configsByModField();
-
-    // building a screen just to look at its class is not free, so each mod is asked once
     private static final Map<String, Boolean> GENERIC_SCREEN_CACHE = new HashMap<>();
 
     private static final String CONFIGURED_PACKAGE = "com.mrcrayfish.configured.";
@@ -60,7 +56,7 @@ public final class ForeignConfigBridge {
      * NeoForge's ConfigurationScreen, or Configured's. Either way there is no hand made screen to override.
      */
     public static boolean hasOnlyGenericScreen(String modId) {
-        return GENERIC_SCREEN_CACHE.computeIfAbsent(modId, ForeignConfigBridge::readIsGenericScreen);
+        return GENERIC_SCREEN_CACHE.computeIfAbsent(modId, NeoforgeConfigBridge::readIsGenericScreen);
     }
 
     private static boolean readIsGenericScreen(String modId) {
@@ -69,8 +65,6 @@ public final class ForeignConfigBridge {
         IConfigScreenFactory factory = container.getCustomExtension(IConfigScreenFactory.class).orElse(null);
         if (factory == null) return true;
         try {
-            // the factory is a lambda in the registering mod's class, so the only way to tell them apart is the
-            // screen it hands back. Building one is harmless, it's the init() call that does the work
             Screen screen = factory.createScreen(container, null);
             return screen instanceof ConfigurationScreen
                     || screen.getClass().getName().startsWith(CONFIGURED_PACKAGE);
@@ -79,7 +73,7 @@ public final class ForeignConfigBridge {
         }
     }
 
-    public static boolean hasConfig(String modId) {
+    public static boolean hasForeignConfig(String modId) {
         for (ModConfig mc : CONFIGS_BY_MOD.getOrDefault(modId, List.of())) {
             if (ForgeConfigHolder.getFromForgeConfig(mc) != null) continue;
             if (!(mc.getSpec() instanceof ModConfigSpec spec)) continue;
@@ -92,11 +86,8 @@ public final class ForeignConfigBridge {
         List<ModConfig> configs = CONFIGS_BY_MOD.getOrDefault(modId, List.of());
         List<ModConfigHolder> out = new ArrayList<>();
         for (ModConfig mc : configs) {
-            // skip anything Moonlight itself created: those already have a real holder and native screen
             if (ForgeConfigHolder.getFromForgeConfig(mc) != null) continue;
             if (!(mc.getSpec() instanceof ModConfigSpec spec)) continue;
-            // an unloaded spec (a server config with no world open) has no values to walk. List it anyway, with an
-            // empty tree: the select screen greys the row out and says why, instead of hiding the config entirely
             if (!spec.isLoaded()) {
                 out.add(new ForeignConfigHolder(idFor(modId, mc), typeFor(mc), spec,
                         new ConfigCategory(Component.empty()), nameFor(modId, mc)));
@@ -149,8 +140,10 @@ public final class ForeignConfigBridge {
             Object raw = entry.getRawValue();
             if (raw instanceof UnmodifiableConfig sub) {
                 ConfigCategory cat = new ConfigCategory(categoryTitle(spec, childPath, key));
-                String comment = spec.getLevelComment(childPath);
-                if (comment != null) cat.setDescription(Component.literal(comment));
+                String commentOfLevel = spec.getLevelComment(childPath);
+                if (!commentOfLevel.isBlank()) {
+                    cat.setDescription(Component.literal(commentOfLevel));
+                }
                 walk(spec, sub, childPath, cat);
                 if (!cat.isEmpty()) parent.add(cat); // drop categories that produced no rows
             } else if (raw instanceof ModConfigSpec.ConfigValue<?> cv) {
@@ -177,7 +170,7 @@ public final class ForeignConfigBridge {
             return new ConfigOption.BooleanValue(title, desc, wrap(cv, meta), b);
         }
         if (sample instanceof Enum<?> e) {
-            Enum<?>[] options = (Enum<?>[]) e.getDeclaringClass().getEnumConstants();
+            Enum<?>[] options = e.getDeclaringClass().getEnumConstants();
             return new ConfigOption.EnumValue(title, desc, wrap(cv, meta), e, options);
         }
         if (sample instanceof Integer i) {
@@ -270,8 +263,10 @@ public final class ForeignConfigBridge {
     }
 
     private static Component categoryTitle(ModConfigSpec spec, List<String> path, String key) {
-        String tk = spec.getLevelTranslationKey(path);
-        if (I18n.exists(tk)) return Component.translatable(tk);
+        String trKey = spec.getLevelTranslationKey(path);
+        if (I18n.exists(trKey)) {
+            return Component.translatable(trKey);
+        }
         return Component.literal(TextHelper.getReadableName(key));
     }
 

@@ -74,7 +74,7 @@ public class DiscoverModsScreen extends Screen {
         }
     }
 
-    private record Row(ModCatalogAPI.Entry data, boolean installed, List<FormattedCharSequence> descLines) implements Item {
+    private record Row(ModCatalogAPI.Entry mod, boolean installed, List<FormattedCharSequence> descLines) implements Item {
         @Override
         public int height() {
             return ROW_H;
@@ -242,7 +242,7 @@ public class DiscoverModsScreen extends Screen {
         int nameRight = installed ? textRight - 12 : textRight;
 
         int nameColor = installed ? ConfigGuiColors.TEXT : ConfigGuiColors.DESCRIPTION;
-        GuiHelper.renderScrollingText(graphics, this.font, Component.literal(row.data().name()),
+        GuiHelper.renderScrollingText(graphics, this.font, Component.literal(row.mod().name()),
                 textX, nameRight, y + 6, LINE_SPACING, nameColor);
 
         int descColor = installed ? ConfigGuiColors.DESCRIPTION : ConfigGuiColors.DISABLED;
@@ -259,9 +259,9 @@ public class DiscoverModsScreen extends Screen {
 
     private void renderIcon(GuiGraphics graphics, Row row, int iconX, int iconY, boolean installed) {
         // installed mods pull the icon straight from their jar; the rest fetch it from the catalog url
-        Icon icon = ModIconCache.get(row.data().modId());
-        if (icon == null && row.data().iconUrl() != null) {
-            icon = RemoteImagesCache.get(row.data().modId(), row.data().iconUrl());
+        Icon icon = ModIconCache.get(row.mod().modId());
+        if (icon == null && row.mod().iconUrl() != null) {
+            icon = RemoteImagesCache.get(row.mod().modId(), row.mod().iconUrl());
         }
         if (icon != null) {
             if (!installed) {
@@ -280,9 +280,9 @@ public class DiscoverModsScreen extends Screen {
     }
 
     private void renderFallbackIcon(GuiGraphics graphics, Row row, int iconX, int iconY, boolean installed) {
-        GuiHelper.renderInitialTile(graphics, this.font, row.data().name(), iconX, iconY, MOD_ICON_SIZE,
+        GuiHelper.renderInitialTile(graphics, this.font, row.mod().name(), iconX, iconY, MOD_ICON_SIZE,
                 installed ? ConfigGuiColors.TILE_ICON_BG : ConfigGuiColors.TILE_BG_HOVER,
-                installed ? ConfigGuiColors.initialLetter(row.data().name()) : ConfigGuiColors.DISABLED, MoonlightIcons.CONFIG);
+                installed ? ConfigGuiColors.initialLetterColor(row.mod().name()) : ConfigGuiColors.DISABLED, MoonlightIcons.CONFIG);
     }
 
     @Override
@@ -298,7 +298,7 @@ public class DiscoverModsScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == InputConstants.MOUSE_BUTTON_LEFT && mouseY >= contentTop && mouseY < contentBottom) {
             Row clicked = rowAt(mouseX, mouseY);
-            if (clicked != null && openModPage(clicked.data())) return true;
+            if (clicked != null && openModPage(clicked.mod())) return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }

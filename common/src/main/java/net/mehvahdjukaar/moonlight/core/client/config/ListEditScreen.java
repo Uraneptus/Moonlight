@@ -1,7 +1,6 @@
 package net.mehvahdjukaar.moonlight.core.client.config;
 
 import net.mehvahdjukaar.moonlight.api.client.gui.GuiHelper;
-import net.mehvahdjukaar.moonlight.api.client.gui.screen.ColorPickerScreen;
 import net.mehvahdjukaar.moonlight.api.client.gui.misc.ConfigGuiColors;
 import net.mehvahdjukaar.moonlight.api.client.gui.widget.DropdownWidget;
 import net.mehvahdjukaar.moonlight.api.client.gui.widget.IconButton;
@@ -32,7 +31,7 @@ class ListEditScreen extends Screen implements PopupHost {
     private final Screen parent;
     private final Consumer<List<String>> onApply;
     private final ConfigOption.ListValue option;
-    private final List<String> working;
+    private final List<String> editedEntries;
     @Nullable
     private final List<String> options; // non-null -> entries are picked with a dropdown
     private final OverlayLayer overlay = new OverlayLayer();
@@ -42,7 +41,7 @@ class ListEditScreen extends Screen implements PopupHost {
     ListEditScreen(ConfigOption.ListValue option, List<String> initial, Screen parent, Consumer<List<String>> onApply) {
         super(option.title());
         this.option = option;
-        this.working = new ArrayList<>(initial);
+        this.editedEntries = new ArrayList<>(initial);
         this.parent = parent;
         this.onApply = onApply;
         this.options = option.options == null ? null : option.options.get();
@@ -64,13 +63,13 @@ class ListEditScreen extends Screen implements PopupHost {
         Component addLabel = Component.literal("+ ").withStyle(ChatFormatting.AQUA)
                 .append(Component.translatable("gui.moonlight.config.list_add").withStyle(ChatFormatting.RESET));
         this.addRenderableWidget(Button.builder(addLabel, b -> {
-            working.add(options != null && !options.isEmpty() ? options.getFirst() : "");
+            editedEntries.add(options != null && !options.isEmpty() ? options.getFirst() : "");
             rebuildRows();
             this.list.setScrollAmount(this.list.getMaxScroll());
         }).bounds(cx - 100, this.height - 52, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> {
-            onApply.accept(new ArrayList<>(working));
+            onApply.accept(new ArrayList<>(editedEntries));
             onClose();
         }).bounds(cx - 100, this.height - 28, 96, 20).build());
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
@@ -79,8 +78,8 @@ class ListEditScreen extends Screen implements PopupHost {
 
     private void rebuildRows() {
         this.overlay.clear(); // rows (and their dropdowns) are recreated here
-        List<ConfigListRow> rows = new ArrayList<>();
-        for (int i = 0; i < working.size(); i++) {
+        List<ConfigRow> rows = new ArrayList<>();
+        for (int i = 0; i < editedEntries.size(); i++) {
             rows.add(new EntryRow(i));
         }
         this.list.setRows(rows);
@@ -128,7 +127,7 @@ class ListEditScreen extends Screen implements PopupHost {
         this.overlay.render(graphics, mouseX, mouseY); // open dropdown popup floats on top
     }
 
-    private class EntryRow extends ConfigListRow {
+    private class EntryRow extends ConfigRow {
         private final AbstractWidget editor;
         @Nullable
         private final EditBox box; // set only for free-text entries, for validity coloring
@@ -142,13 +141,13 @@ class ListEditScreen extends Screen implements PopupHost {
             if (options != null) {
                 this.box = null;
                 this.editor = new DropdownWidget(editorWidth, CONTROL_HEIGHT, options, option.icon,
-                        working.get(index), v -> working.set(index, v));
+                        editedEntries.get(index), v -> editedEntries.set(index, v));
             } else {
                 EditBox b = new EditBox(ListEditScreen.this.font, 0, 0, editorWidth, CONTROL_HEIGHT, Component.empty());
                 b.setMaxLength(Short.MAX_VALUE);
-                b.setValue(working.get(index));
+                b.setValue(editedEntries.get(index));
                 b.setResponder(s -> {
-                    working.set(index, s);
+                    editedEntries.set(index, s);
                     b.setTextColor(option.isValidEntry(b.getValue()) ? ConfigGuiColors.FIELD_TEXT : ConfigGuiColors.ERROR);
                 });
                 b.setTextColor(option.isValidEntry(b.getValue()) ? ConfigGuiColors.FIELD_TEXT : ConfigGuiColors.ERROR);
@@ -156,7 +155,7 @@ class ListEditScreen extends Screen implements PopupHost {
                 this.editor = b;
             }
             this.remove = new IconButton(0, 0, RESET_WIDTH, CONTROL_HEIGHT, Component.empty(), MoonlightIcons.DELETE, btn -> {
-                working.remove(index);
+                editedEntries.remove(index);
                 rebuildRows();
             });
             this.children = List.of(editor, remove);

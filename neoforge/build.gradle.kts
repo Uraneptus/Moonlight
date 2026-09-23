@@ -22,6 +22,7 @@ dependencies {
     jarJar("net.mehvahdjukaar:codecui-neoforge:${codecui_version}")
 
     modCompileOnly("curse.maven:irisshaders-455508:5789255")
+    modCompileOnly("maven.modrinth:featurify:s1OsRGOI")
     modCompileOnly("curse.maven:map-atlases-forge-519759:7659933")
     modCompileOnly("curse.maven:modernfix-790626:4599353")
     modCompileOnly("curse.maven:quark-243121:8146177")
