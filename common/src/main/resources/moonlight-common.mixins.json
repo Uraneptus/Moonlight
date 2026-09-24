@@ -46,6 +46,7 @@
     "PistonBlockEntityMixin",
     "PlaceStructureCommandMixin",
     "ReloadableClientResourcesMixin",
+    "ResourceLocationMixin",
     "ServerLevelMixin",
     "ServerPlayerMixin",
     "ShearItemMixin",
