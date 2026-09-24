@@ -1,1 +1,3 @@
-fixed a weird issue with no mans land + modernfix combo
+- more configs improvements
+- added some sanity checks to prevent hard to track down issues
+- misc fixes
